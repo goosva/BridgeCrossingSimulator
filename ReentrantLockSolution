@@ -1,61 +1,65 @@
-import java.util.concurrent.locks.Condition; //import condition and lock
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class Bridge{
+public class Bridge {
+	 // Create ReentrantLock to control bridge access
+    private static ReentrantLock lock = new ReentrantLock();
+    
+     // Create condition to signal when vehicles can cross
+    private static Condition condition = lock.newCondition(); 
 
-	private static ReentrantLock lock = new ReentrantLock(); // create the lock
-	private static Condition condition = lock.newCondition(); //create condition
-	
-	
-	//prevents deadlock from vehicles going opposite directions
-	public static void accessBridge(String direction){
-		lock.lock(); 
-		try {
-			
-			
-			//simulate crossing bridge
-			System.out.println("Vehicle going " + direction + " is crossing.");
-			Thread.sleep((long) (Math.random()*4000+1000)); //simulates crossing
-			System.out.println("Vehicle going " + direction + " has crossed.");
-			
-			
-			condition.signalAll(); // signals next thread can proceed
-		} catch(InterruptedException e) {
-			e.printStackTrace();
-		}
-		finally {
-			lock.unlock();
-		}
-	}
-	
-	
-	public static void main(String[] args) {
-		for (int i = 0; i<5;i++) { //loops 5 times for 5 vehicles west and 5 east
-			//thread for going east
-			new Thread(() -> { 
-				try { //trys to sleep thread then attempts to cross bridge
-					Thread.sleep((long) (Math.random()*500+1000));
-					accessBridge("East");
-				} catch (InterruptedException e) { //if error prints out stack trace
-					e.printStackTrace();
-				}
-			}).start(); //starts thread
-			
-			//creates threads for going west
-			new Thread(() -> { //creates thread that does following
-				try { //trys to sleep thread then attempts to cross bridge
-					Thread.sleep((long) (Math.random()*500+1000));
-					accessBridge("West");
-				} catch (InterruptedException e) { //if error prints out stack trace
-					e.printStackTrace();
-				}
-			}).start(); //starts thread
-		}
-	
-			
-			
-		
-		
-	}
+    /**
+     * This method handles the logic for when vehicles are crossing the bridge.
+     * At the end of this method it signals to the rest of the threads they can 
+     * attempt to cross. This method ensures there is no deadlock or starvation as
+     * it follow a FCFS basis.
+     * @param direction
+     */
+    public static void accessBridge(String direction) {
+        lock.lock(); // Acquire the lock
+        try {
+            // Simulate crossing the bridge
+            System.out.println("Vehicle going " + direction + " is crossing.");
+            Thread.sleep((long) (Math.random() * 4000 + 1000)); // Simulates crossing time
+            System.out.println("Vehicle going " + direction + " has crossed.");
+            
+            // Signal all waiting vehicles to check if they can cross
+            condition.signalAll();
+        } catch (InterruptedException e) {
+            e.printStackTrace(); 
+        } finally {
+            lock.unlock(); // Always release the lock
+        }
+    }
+    /**
+     * Main method will simulate multiple vehicles trying to cross the bridge.
+     * Each vehicle will have it own separate thread that tries to cross in random
+     * order.
+     * @param args
+     */
+    public static void main(String[] args) {
+        for (int i = 0; i < 5; i++) { // Loop 5 times for 5 vehicles west and 5 east
+            // Thread for going east
+            new Thread(() -> {
+                try {
+                	// Simulate random delay before attempting to cross the bridge
+                    Thread.sleep((long) (Math.random() * 500 + 1000));
+                    accessBridge("East");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }).start(); // Start thread for east direction
 
+            // Thread for going west
+            new Thread(() -> {
+                try {
+                	// Simulate random delay before attempting to cross the bridge
+                    Thread.sleep((long) (Math.random() * 500 + 1000));
+                    accessBridge("West");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }).start(); // Start thread for west direction
+        }
+    }
 }
